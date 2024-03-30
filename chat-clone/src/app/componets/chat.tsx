@@ -4,17 +4,25 @@ import React, { useState, useCallback } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 const Chat: React.FC = () => {
-  const [messageHistory, setMessageHistory] = useState<string[]>([]); // Definindo explicitamente o tipo do estado inicial como string[]
+  const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
 
   const { sendMessage, readyState } = useWebSocket('ws://localhost:8080', {
-    onMessage: useCallback((event: MessageEvent) => {
-      setMessageHistory(prev => [...prev, event.data]);
+    onMessage: useCallback(async (event: MessageEvent) => {
+      // Verifica se a mensagem é um Blob
+      if (event.data instanceof Blob) {
+        // Lê o conteúdo do Blob como texto
+        const message = await event.data.text();
+        setMessageHistory(prev => [...prev, message]);
+      } else {
+        // Se não for um Blob, assume que é uma string
+        setMessageHistory(prev => [...prev, event.data]);
+      }
     }, []),
   });
 
   const handleClickSendMessage = useCallback(() => {
-    if (inputValue !== '') {
+    if (inputValue.trim() !== '') {
       sendMessage(inputValue);
       setInputValue('');
     }
